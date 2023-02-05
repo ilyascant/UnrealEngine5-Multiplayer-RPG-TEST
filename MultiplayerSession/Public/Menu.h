@@ -2,6 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
+
+
 #include "Menu.generated.h"
 
 UCLASS()
@@ -18,6 +21,18 @@ class MULTIPLAYERSESSION_API UMenu : public UUserWidget
 
 		virtual bool Initialize() override;
 		virtual void NativeDestruct() override;
+
+		//
+		// Callback for the custom delegates on the MultiplayerSessionsSubsystem
+		//
+		UFUNCTION()
+		void OnCreateSession(bool bWasSuccesfull);
+		void OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResult, bool bWasSuccessful);
+		void OnJoinSession(EOnJoinSessionCompleteResult::Type Result);
+		UFUNCTION()
+		void OnDestroySession(bool bWasSuccesfull);
+		UFUNCTION()
+		void OnStartSession(bool bWasSuccesfull);
 
 	private:
 		

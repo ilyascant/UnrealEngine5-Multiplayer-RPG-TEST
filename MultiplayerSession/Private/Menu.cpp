@@ -1,6 +1,9 @@
 #include "Menu.h"
 #include "Components/Button.h"
 #include "MultiplayerSessionSubsystem.h"
+#include "OnlineSessionSettings.h"
+
+#include "../../../../../Source/Slash/DebugMacros.h"
 
 void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 {
@@ -29,6 +32,14 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 	if (GameInstance) {
 		MultiplayerSessionSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionSubsystem>();
 	}
+
+	if (MultiplayerSessionSubsystem) {
+		MultiplayerSessionSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+		MultiplayerSessionSubsystem->MultiplayerOnFindSessionsComplete.AddUObject(this, &ThisClass::OnFindSessions);
+		MultiplayerSessionSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
+		MultiplayerSessionSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &ThisClass::OnDestroySession);
+		MultiplayerSessionSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this, &ThisClass::OnStartSession);
+	}
 }
 
 bool UMenu::Initialize()
@@ -48,16 +59,38 @@ void UMenu::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UMenu::HostButtonClicked()
+void UMenu::OnCreateSession(bool bWasSuccesfull)
 {
-	if (MultiplayerSessionSubsystem) {
-		MultiplayerSessionSubsystem->CreateSession(NumPublicConnections, MatchType);
+	if (bWasSuccesfull) {
+
+		SCREEN_WARN_MSG("Session Created Successfully");
 
 		TObjectPtr<UWorld> World = GetWorld();
-		if (World) {
-			World->ServerTravel("/Game/Maps/Lobby?listen");
-		}
+		if (World) 	World->ServerTravel("/Game/Maps/Lobby?listen");
 	}
+	else SCREEN_ERR_MSG("Failed to Create Session");
+
+}
+
+void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResult, bool bWasSuccessful)
+{
+}
+
+void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
+{
+}
+
+void UMenu::OnDestroySession(bool bWasSuccesfull)
+{
+}
+
+void UMenu::OnStartSession(bool bWasSuccesfull)
+{
+}
+
+void UMenu::HostButtonClicked()
+{
+	if (MultiplayerSessionSubsystem) MultiplayerSessionSubsystem->CreateSession(NumPublicConnections, MatchType);
 }
 
 void UMenu::JoinButtonClicked()
@@ -71,7 +104,7 @@ void UMenu::MenuTearDown()
 	if (World) {
 		TObjectPtr<APlayerController> PC = World->GetFirstPlayerController();
 		if (PC) {
-			FInputModeGameAndUI InputModeData;
+			FInputModeGameOnly InputModeData;
 			PC->SetInputMode(InputModeData);
 			PC->SetShowMouseCursor(false);
 		}

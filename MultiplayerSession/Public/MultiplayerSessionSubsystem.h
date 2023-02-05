@@ -7,6 +7,17 @@
 #include "MultiplayerSessionSubsystem.generated.h"
 
 
+
+//
+// Declaring own custom delegates for the Menu class to bind callbacks to
+//
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnCreateSessionComplete, bool, bWasSuccesfull);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMultiplayerOnFindSessionsComplete, const TArray<FOnlineSessionSearchResult>& SessionResult, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMultiplayerOnJoinSessionComplete, EOnJoinSessionCompleteResult::Type Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnDestroySessionComplete, bool, bWasSuccesfull);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnStartSessionComplete, bool, bWasSuccesfull);
+
 UCLASS()
 class MULTIPLAYERSESSION_API UMultiplayerSessionSubsystem : public UGameInstanceSubsystem
 {
@@ -24,6 +35,17 @@ class MULTIPLAYERSESSION_API UMultiplayerSessionSubsystem : public UGameInstance
 		void JoinSession(const FOnlineSessionSearchResult& SessionResult);
 		void DestroySession();
 		void StartSession();
+
+		//
+		// Own custom delegates for the Menu class to bind callbacks to
+		//
+
+		FMultiplayerOnCreateSessionComplete MultiplayerOnCreateSessionComplete;
+		FMultiplayerOnFindSessionsComplete MultiplayerOnFindSessionsComplete;
+		FMultiplayerOnJoinSessionComplete MultiplayerOnJoinSessionComplete;
+		FMultiplayerOnDestroySessionComplete MultiplayerOnDestroySessionComplete;
+		FMultiplayerOnStartSessionComplete MultiplayerOnStartSessionComplete;
+
 
 	protected:
 
