@@ -5,15 +5,8 @@
 #include "InputAction.h"
 #include "CharacterTypes.h"
 
-/**
-	Online Subsystem
-*/
-#include "Interfaces/OnlineSessionInterface.h"
-
-
 #include "SlashCharacter.generated.h"
 
-//
 
 class UInputAction;
 class UInputMappingContext;
@@ -134,35 +127,4 @@ public:
 	FORCEINLINE bool GetbComboPerm() { return bComboPerm; }
 	FORCEINLINE void SetbComboPerm(const bool& State) { bComboPerm = State; }
 
-
-
-
-
-
-
-
-
-/**
-	Online Subsystem
-*/
-
-public:
-	// Pointer to the online session interface
-	IOnlineSessionPtr OnlineSessionInterface;
-
-protected:
-	UFUNCTION(BlueprintCallable)
-	void CreateGameSession();
-
-	UFUNCTION(BlueprintCallable)
-	void JoinGameSession();
-
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	void OnFindSessionsComplete(bool bWasSuccessful);
-
-private:
-	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
-	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
-
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 };

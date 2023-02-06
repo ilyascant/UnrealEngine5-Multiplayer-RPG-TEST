@@ -12,25 +12,13 @@
 #include "Slash/DebugMacros.h"
 
 
+ASlashCharacter::ASlashCharacter() {
 
-/**
-	Online Subsystem
-*/
-
-#include "OnlineSubsystem.h"
-#include "OnlineSessionSettings.h"
-
-
-ASlashCharacter::ASlashCharacter() : 
-	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
-	FindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete))
-	
-{
 	PrimaryActorTick.bCanEverTick = true;
 
 	TObjectPtr<UCharacterMovementComponent> CharMov = GetCharacterMovement();
 	CharMov->bOrientRotationToMovement = true;
-	CharMov->RotationRate = FRotator(0.f, 360.f, 0.f );
+	CharMov->RotationRate = FRotator(0.f, 360.f, 0.f);
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -44,26 +32,12 @@ ASlashCharacter::ASlashCharacter() :
 
 	Hair = CreateDefaultSubobject<UGroomComponent>(TEXT("Hair"));
 	Hair->SetupAttachment(GetMesh());
-	Hair->AttachmentName = FString("head");	
-	
+	Hair->AttachmentName = FString("head");
+
 	Eyebrows = CreateDefaultSubobject<UGroomComponent>(TEXT("Eyebrows"));
 	Eyebrows->SetupAttachment(GetMesh());
 	Eyebrows->AttachmentName = FString("head");
 
-
-
-
-
-/**
-	Online Subsystem
-*/
-
-	TObjectPtr<IOnlineSubsystem> OnlineSubsystem = IOnlineSubsystem::Get();
-	if (OnlineSubsystem) {
-		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, FString::Printf(TEXT("Found Subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
-	}
 }
 
 void ASlashCharacter::BeginPlay()
@@ -286,85 +260,6 @@ void ASlashCharacter::SetWeaponCollision(ECollisionEnabled::Type CollisionEnable
 	if (EquippedWeapon && EquippedWeapon->GetWeaponBox()) {
 		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
 		EquippedWeapon->IgnoreActors.Empty();
-	}
-}
-
-
-
-
-
-/**
-	Online Subsystem
-*/
-
-
-void ASlashCharacter::CreateGameSession()
-{
-	// Called when pressin the 1 key
-	if (!OnlineSessionInterface.IsValid()) return;
-
-	// If there is a Session. DESTROY it
-	auto ExistingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
-	if (ExistingSession != nullptr) OnlineSessionInterface->DestroySession(NAME_GameSession);
-
-	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
-
-	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
-	SessionSettings->bIsLANMatch = false;
-	SessionSettings->NumPublicConnections = 4;
-	SessionSettings->bAllowJoinInProgress = true;
-	SessionSettings->bAllowJoinViaPresence = true;
-	SessionSettings->bShouldAdvertise = true;
-	SessionSettings->bUsesPresence = true;
-	SessionSettings->bUseLobbiesIfAvailable = true;
-	SessionSettings->Set(FName("MatchType"), FString("FreeForAll"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-
-	const TObjectPtr<ULocalPlayer> LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
-
-}
-
-void ASlashCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	if (bWasSuccessful) SCREEN_MSG("Created session: %s", *SessionName.ToString())
-	else {
-		if (GEngine) {
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Red,
-				FString(TEXT("Failed to create session!"))
-			);
-		}
-	}
-}
-
-void ASlashCharacter::JoinGameSession() {
-
-	// Find game session
-
-	if (!OnlineSessionInterface.IsValid()) return;
-
-	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
-
-	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-	SessionSearch->MaxSearchResults = 100000;
-	SessionSearch->bIsLanQuery = false;
-	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
-
-	const TObjectPtr<ULocalPlayer> LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
-
-
-}
-
-void ASlashCharacter::OnFindSessionsComplete(bool bWasSuccessful) {
-	
-	for (auto Result : SessionSearch->SearchResults) {
-		FString Id = Result.GetSessionIdStr();
-		FString User = Result.Session.OwningUserName;
-
-		SCREEN_MSG("Id: %s, User: %s", *Id, *User);
 	}
 }
 

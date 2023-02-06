@@ -29,3 +29,33 @@
 					FString::Printf(TEXT(Format), ##__VA_ARGS__)\
 					);\
 			}
+
+#define SCREEN_ERR_MSG(Format, ...) if(GEngine)\
+			{\
+				GEngine->AddOnScreenDebugMessage(\
+					-1,\
+					15.f,\
+					FColor::Red,\
+					FString::Printf(TEXT(Format), ##__VA_ARGS__)\
+					);\
+			}
+
+#define SCREEN_WARN_MSG(Format, ...) if(GEngine)\
+			{\
+				GEngine->AddOnScreenDebugMessage(\
+					-1,\
+					15.f,\
+					FColor::Yellow,\
+					FString::Printf(TEXT(Format), ##__VA_ARGS__)\
+					);\
+			}
+
+#define SCREEN_CUSTOM_MSG(Key, Time, Color, Format, ...) if(GEngine)\
+			{\
+				GEngine->AddOnScreenDebugMessage(\
+					Key,\
+					Time,\
+					Color,\
+					FString::Printf(TEXT(Format), ##__VA_ARGS__)\
+					);\
+			}
