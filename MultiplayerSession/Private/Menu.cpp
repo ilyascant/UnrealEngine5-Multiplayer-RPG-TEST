@@ -2,13 +2,15 @@
 #include "Components/Button.h"
 #include "MultiplayerSessionSubsystem.h"
 #include "OnlineSessionSettings.h"
+#include "OnlineSubsystem.h"
 
-#include "../../../../../Source/Slash/DebugMacros.h"
+#include "MultiplayerSession/DebugMacros.h"
 
-void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
+void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
 {
 	NumPublicConnections = NumberOfPublicConnections;
 	MatchType = TypeOfMatch;
+	PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
 	AddToViewport();
 	SetVisibility(ESlateVisibility::Visible);
 	bIsFocusable = true;
@@ -27,7 +29,7 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 			PlayerController->SetShowMouseCursor(true);
 		}
 	}
-
+	
 	TObjectPtr<UGameInstance> GameInstance = GetGameInstance();
 	if (GameInstance) {
 		MultiplayerSessionSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionSubsystem>();
@@ -66,18 +68,49 @@ void UMenu::OnCreateSession(bool bWasSuccesfull)
 		SCREEN_WARN_MSG("Session Created Successfully");
 
 		TObjectPtr<UWorld> World = GetWorld();
-		if (World) 	World->ServerTravel("/Game/Maps/Lobby?listen");
+		if (World) 	World->ServerTravel(PathToLobby);
 	}
-	else SCREEN_ERR_MSG("Failed to Create Session");
+	else { 
+		SCREEN_ERR_MSG("Failed to Create Session"); 
+		HostButton->SetIsEnabled(true);
+	}
 
 }
 
 void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResult, bool bWasSuccessful)
 {
+	if (MultiplayerSessionSubsystem == nullptr) {
+		return;
+	}
+
+	for (auto Result : SessionResult) {
+		FString SettingsValue;
+		Result.Session.SessionSettings.Get(FName("MatchType"), SettingsValue);
+		if (SettingsValue == MatchType) {
+			MultiplayerSessionSubsystem->JoinSession(Result);
+			return;
+		}
+	}
+
+	if(!bWasSuccessful || SessionResult.Num() <= 0) JoinButton->SetIsEnabled(true);
 }
 
 void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
-{
+{	
+	TObjectPtr<IOnlineSubsystem> Subsystem = IOnlineSubsystem::Get();
+	if (Subsystem) {
+		IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+		if (SessionInterface.IsValid()) {
+			FString Address;
+			SessionInterface->GetResolvedConnectString(NAME_GameSession, Address);
+
+			TObjectPtr<APlayerController> PC = GetGameInstance()->GetFirstLocalPlayerController();
+			if (PC) {
+				PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
+			}
+		}
+	}
+	if (Result != EOnJoinSessionCompleteResult::Success) JoinButton->SetIsEnabled(true);
 }
 
 void UMenu::OnDestroySession(bool bWasSuccesfull)
@@ -90,11 +123,14 @@ void UMenu::OnStartSession(bool bWasSuccesfull)
 
 void UMenu::HostButtonClicked()
 {
+	HostButton->SetIsEnabled(false);
 	if (MultiplayerSessionSubsystem) MultiplayerSessionSubsystem->CreateSession(NumPublicConnections, MatchType);
 }
 
 void UMenu::JoinButtonClicked()
 {
+	JoinButton->SetIsEnabled(false);
+	if (MultiplayerSessionSubsystem) MultiplayerSessionSubsystem->FindSessions(1000);
 }
 
 void UMenu::MenuTearDown()

@@ -18,6 +18,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FMultiplayerOnJoinSessionComplete, EOnJoinSe
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnDestroySessionComplete, bool, bWasSuccesfull);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnStartSessionComplete, bool, bWasSuccesfull);
 
+
 UCLASS()
 class MULTIPLAYERSESSION_API UMultiplayerSessionSubsystem : public UGameInstanceSubsystem
 {
@@ -64,10 +65,11 @@ class MULTIPLAYERSESSION_API UMultiplayerSessionSubsystem : public UGameInstance
 	private:
 		IOnlineSessionPtr SessionInterface;
 		TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
+		TSharedPtr<FOnlineSessionSearch> LastSessionSearch;
 
 		//
-		// To add to the Onlie Session Interface delegate list;
-		// We'll bind ourr MultiplayerSessionSubsystem internal callback to these.
+		// To add to the Online Session Interface delegate list;
+		// We'll bind our MultiplayerSessionSubsystem internal callback to these.
 		//
 
 		FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
@@ -81,4 +83,7 @@ class MULTIPLAYERSESSION_API UMultiplayerSessionSubsystem : public UGameInstance
 		FOnStartSessionCompleteDelegate StartSessionCompleteDelegate;
 		FDelegateHandle StartSessionCompleteDelegateHandle;
 
+		bool bCreateSessionOnDestroy{ false };
+		int32 LastNumPublicConnections;
+		FString LastMatchType;
 };
