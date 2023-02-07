@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Items/Item.h"
+#include "InputAction.h"
+#include "WeaponTypes.h"
 #include "Weapon.generated.h"
 
 class UBoxComponent;
@@ -16,9 +18,14 @@ class SLASH_API AWeapon : public AItem
 		
 		virtual void Equip(USceneComponent* InParent, const FName& InSocketName) override;
 		virtual void Drop(const FVector& PlayerLocation, const FVector& PlayerForward) override;
+
+		bool CanAttack();
+		void Attack(const FInputActionValue& Value);
+		void PlayAttackMontage(const FName& SectionName);
+
 		bool AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName);
 		bool DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName);
-
+		void SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled);
 
 		TArray<TObjectPtr<AActor>> IgnoreActors;
 
@@ -40,8 +47,19 @@ class SLASH_API AWeapon : public AItem
 		UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 		TObjectPtr<UBoxComponent> WeaponBoxComp;
 
+		TObjectPtr<class ASlashCharacter> SlashCharacter;
+		UPROPERTY(EditDefaultsOnly, Category = "Montages")
+		TObjectPtr<UAnimMontage> AttackMontage;
+		EActionState WeaponActionState = EActionState::EAS_Unoccupied;
+		bool bComboPerm = false;
+
+
 	public:
 		FORCEINLINE TObjectPtr<UBoxComponent> GetWeaponBox() const { return WeaponBoxComp; };
+		FORCEINLINE EActionState GetWeaponActionState() { return WeaponActionState; }
+		FORCEINLINE void SetWeaponActionState(const EActionState& State) { WeaponActionState = State; }
+		FORCEINLINE bool GetbComboPerm() { return bComboPerm; }
+		FORCEINLINE void SetbComboPerm(const bool& Perm) { bComboPerm = Perm; }
 
 		
 		

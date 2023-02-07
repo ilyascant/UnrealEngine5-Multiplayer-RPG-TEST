@@ -68,12 +68,10 @@ protected:
 		Play Montage Functions
 	*/
 
-	void PlayAttackMontage(const FName& SectionName);
 	void PlayEquipMontage(const FName Selection);
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
-	bool CanAttack();
 	bool CanDisarm();
 	bool CanArm();
 
@@ -105,8 +103,6 @@ private:
 	float ZoomFactor ;
 
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
-	EActionState ActionState = EActionState::EAS_Unoccupied;
-	bool bComboPerm;
 
 	/**
 		 Animation Montages
@@ -118,13 +114,17 @@ private:
 	TObjectPtr<UAnimMontage> EquipMontage;
 
 
+	/**
+		Widget
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UWidgetComponent> OverheadWidget;
+
 
 public:
 	FORCEINLINE virtual void SetOverlappingItem(TObjectPtr<AItem> Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
-	FORCEINLINE EActionState GetActionState() { return ActionState; }
-	FORCEINLINE void SetActionState(const EActionState& State) { ActionState = State; }	
-	FORCEINLINE bool GetbComboPerm() { return bComboPerm; }
-	FORCEINLINE void SetbComboPerm(const bool& State) { bComboPerm = State; }
+	FORCEINLINE TObjectPtr<AWeapon> GetEquippedWeapon() { return EquippedWeapon; }
+
 
 };

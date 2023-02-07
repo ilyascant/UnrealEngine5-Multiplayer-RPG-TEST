@@ -3,7 +3,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include <Interfaces/HitInterface.h>
+#include "Interfaces/HitInterface.h"
+#include "Animation/AnimMontage.h"
 
 
 AWeapon::AWeapon() {
@@ -28,6 +29,10 @@ void AWeapon::BeginPlay()
 
 	WeaponBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnBoxOverlap);
 }
+
+/**
+*	OVERLAP DELEGATES
+*/
 
 void AWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -81,6 +86,12 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 }
 
+/**
+*	WEAPON INTERACTIONS
+*/
+
+
+
 void AWeapon::Equip(USceneComponent* InParent, const FName& InSocketName) {
 	AttachMeshToSocket(InParent, InSocketName);
 }
@@ -125,4 +136,74 @@ bool AWeapon::DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const F
 	return false;
 }
 
+
+/**
+*	WEAPON COMBAT
+*	Since every weapon has unique combat options
+*	Function is implemanted in Weapon Class
+*/
+
+
+bool AWeapon::CanAttack()
+{
+	/**
+	* bComboPerm USED FOR DETERMINING IF IT IS IN COMBO STAGE
+	* IF IN COMBO STAGE ALWAYS RETURN TRUE
+	*/
+	
+	return  (this->GetbComboPerm() ||
+			(WeaponActionState == EActionState::EAS_Unoccupied
+				&& SlashCharacter->GetCharacterState() != ECharacterState::ECS_Unequipped
+				&& this->ItemState == EItemState::EIS_Equiped));
+}
+
+void AWeapon::Attack(const FInputActionValue& Value)
+{
+	SlashCharacter = Cast<ASlashCharacter>(this->GetAttachParentActor());
+	if (!SlashCharacter || !CanAttack()) return;
+
+	/**
+	* SELECTS NEXT ATTACK DEFAULT EActionState::EAS_Unoccupied
+	*/
+	FName SectionName = FName();
+	switch (WeaponActionState) {
+	case EActionState::EAS_Attack01:
+		WeaponActionState = EActionState::EAS_Attack02;
+		SectionName = FName("Attack02");
+		break;
+	case EActionState::EAS_Attack02:
+		WeaponActionState = EActionState::EAS_Attack01;
+		SectionName = FName("Attack01");
+		break;
+	case EActionState::EAS_Unoccupied:
+		WeaponActionState = EActionState::EAS_Attack01;
+		SectionName = FName("Attack01");
+		break;
+	default:
+		return;
+		break;
+	}
+
+	/**
+	* PLAYS THE MONTAGE THEN JUMPS TO SECTION NAME MONTAGE
+	* NEXT ACTION SECTION IS DETERMINED IN ANIM NOTIFY STATE
+	*/
+	PlayAttackMontage(SectionName);
+}
+void AWeapon::PlayAttackMontage(const FName& SectionName)
+{
+	TObjectPtr<UAnimInstance> AnimInstance = SlashCharacter->GetMesh()->GetAnimInstance();
+	if (AnimInstance && AttackMontage) {
+		AnimInstance->Montage_Play(AttackMontage);
+		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+	}
+}
+
+void AWeapon::SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (this->GetWeaponBox()) {
+		this->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		this->IgnoreActors.Empty();
+	}
+}
 

@@ -4,6 +4,7 @@
 #include "Animation/AnimInstance.h"
 #include "InputAction.h"
 #include "CharacterTypes.h"
+#include "../Items/Weapons/WeaponTypes.h"
 #include "SlashAnimInstance.generated.h"
 
 UCLASS()
@@ -30,7 +31,7 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 		bool bIsFalling;
 
 		UPROPERTY(BlueprintReadOnly, Category = "Movement|Character State")
-		ECharacterState CharacterState;
+		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 		UPROPERTY(BlueprintReadOnly, Category = "Movement|Action State")
-		EActionState ActionState;
+		EActionState ActionState = EActionState::EAS_Unoccupied;
 };

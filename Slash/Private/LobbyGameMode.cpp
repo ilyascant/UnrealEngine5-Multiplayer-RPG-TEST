@@ -18,6 +18,11 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 			FString PlayerName = PlayerState->GetPlayerName();
 			SCREEN_CUSTOM_MSG(-1, 15.f, FColor::Cyan, "%s has joined the game", *PlayerName);
 		}
+
+		if (TObjectPtr<UWorld> World = GetWorld()) {
+			bUseSeamlessTravel = true;
+			World->ServerTravel(FString(TEXT("/Game/Maps/Test_Level?listen")));
+		}
 	}
 }
 

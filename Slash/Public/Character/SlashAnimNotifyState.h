@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
-#include "CharacterTypes.h"
+#include "../Items/Weapons/WeaponTypes.h"
 #include "SlashAnimNotifyState.generated.h"
 
 UCLASS()
@@ -18,9 +18,9 @@ public:
 
 private:
 	TObjectPtr<class ASlashCharacter> SlashChr;
-	EActionState NextActionState;
-	EActionState PrevActionState;
-	EActionState ActionState;
+	EActionState NextActionState = EActionState::EAS_Unoccupied;
+	EActionState PrevActionState = EActionState::EAS_Unoccupied;
+	EActionState ActionState = EActionState::EAS_Unoccupied;
 	bool bComboPerm;
 	bool triggered;
 

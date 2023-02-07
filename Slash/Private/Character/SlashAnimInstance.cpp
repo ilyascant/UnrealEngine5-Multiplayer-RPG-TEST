@@ -1,6 +1,7 @@
 #include "Character/SlashAnimInstance.h"
 #include "Character/SlashCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Items/Weapons/Weapon.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -21,7 +22,10 @@ void USlashAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		GroundSpeed =  UKismetMathLibrary::VSizeXY(SlashCharacterMovement->Velocity);
 		bIsFalling = SlashCharacterMovement->IsFalling();
 		CharacterState = SlashCharacter->GetCharacterState();
-		ActionState = SlashCharacter->GetActionState();
+		
+		if (TObjectPtr<AWeapon> EquippedWeapon = SlashCharacter->GetEquippedWeapon()) {
+			ActionState = SlashCharacter->GetEquippedWeapon()->GetWeaponActionState();
+		}
 	}
 }
 

@@ -9,6 +9,7 @@
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Slash/DebugMacros.h"
 
 
@@ -38,6 +39,9 @@ ASlashCharacter::ASlashCharacter() {
 	Eyebrows->SetupAttachment(GetMesh());
 	Eyebrows->AttachmentName = FString("head");
 
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(RootComponent);
+
 }
 
 void ASlashCharacter::BeginPlay()
@@ -52,6 +56,10 @@ void ASlashCharacter::BeginPlay()
 	}
 	
 }
+
+/**
+*	CHARACTER MOVEMENT
+*/
 
 void ASlashCharacter::Move(const FInputActionValue& Value)
 {
@@ -93,14 +101,21 @@ void ASlashCharacter::Zoom(const FInputActionValue& Value)
 
 }
 
+/**
+*	CHARACTER INTERACTION
+*/
+
 void ASlashCharacter::Equip(const FInputActionValue& Value)
 {
-	if (EquippedWeapon && EquippedWeapon->ItemState == EItemState::EIS_Equipping) return;
+	TObjectPtr<AWeapon> OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
+	if (EquippedWeapon && OverlappingWeapon) {
+		EquippedWeapon->Drop(this->GetActorLocation(), this->GetActorForwardVector());
+		EquippedWeapon = nullptr;
+	};
 
 	const float bValue = Value.Get<bool>();
-
+	
 	if(Controller && bValue){
-		TObjectPtr<AWeapon> OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 		if (OverlappingWeapon){
 			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
 			OverlappingWeapon->ItemState = EItemState::EIS_Equiped;
@@ -121,17 +136,31 @@ void ASlashCharacter::Equip(const FInputActionValue& Value)
 	}
 }
 
+void ASlashCharacter::Drop(const FInputActionValue& Value)
+{
+	const float bValue = Value.Get<bool>();
+
+	if (Controller && bValue) {
+		if (EquippedWeapon && EquippedWeapon->ItemState != EItemState::EIS_Equipping && CanDisarm()) {
+			EquippedWeapon->Drop(this->GetActorLocation(), this->GetActorForwardVector());
+			CharacterState = ECharacterState::ECS_Unequipped;
+			EquippedWeapon = nullptr;
+		}
+	}
+}
 
 bool ASlashCharacter::CanDisarm() {
-	return (ActionState == EActionState::EAS_Unoccupied &&
-		CharacterState != ECharacterState::ECS_Unequipped && 
-		EquippedWeapon);
+	return (EquippedWeapon && 
+		EquippedWeapon->ItemState == EItemState::EIS_Equiped &&
+		EquippedWeapon->GetWeaponActionState() == EActionState::EAS_Unoccupied &&
+		CharacterState != ECharacterState::ECS_Unequipped);
 }
 
 bool ASlashCharacter::CanArm() {
-	return (ActionState == EActionState::EAS_Unoccupied &&
-		CharacterState == ECharacterState::ECS_Unequipped &&
-		EquippedWeapon);
+	return (EquippedWeapon && 
+		EquippedWeapon->ItemState == EItemState::EIS_Equiped &&
+		EquippedWeapon->GetWeaponActionState() == EActionState::EAS_Unoccupied &&
+		CharacterState == ECharacterState::ECS_Unequipped);
 }
 
 void ASlashCharacter::Disarm()
@@ -155,82 +184,40 @@ void ASlashCharacter::ArmEnd()
 void ASlashCharacter::PlayEquipMontage(const FName Selection) {
 	TObjectPtr<UAnimInstance> AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && EquipMontage) {
-		AnimInstance->Montage_Play(EquipMontage);
 		EquippedWeapon->ItemState = EItemState::EIS_Equipping;
+		AnimInstance->Montage_Play(EquipMontage);
 		AnimInstance->Montage_JumpToSection(Selection, EquipMontage);
 	}
 
 }
 
-bool ASlashCharacter::CanAttack()
-{
-	/**
-	* bComboPerm USED FOR DETERMINING IF IT IS IN COMBO STAGE
-	* IF IN COMBO STAGE ALWAYS RETURN TRUE
-	*/
-	return  (bComboPerm || (ActionState == EActionState::EAS_Unoccupied && CharacterState != ECharacterState::ECS_Unequipped && EquippedWeapon->ItemState != EItemState::EIS_Equipping));
+/**
+*	CHARACTER COMBAT
+*	Since Combat depands on Weapon selection
+*	Character class call Weapon class for Attack options
+*	Each Weapon have their own unique combat options
+*/
+
+void ASlashCharacter::Attack(const FInputActionValue& Value) {
+	EquippedWeapon->Attack(Value);
 }
 
-void ASlashCharacter::Attack(const FInputActionValue& Value)
-{
-	if (!CanAttack()) return;
-
-	/**
-	* SELECTS NEXT ATTACK DEFAULT EActionState::EAS_Unoccupied
-	*/
-	FName SectionName = FName();
-	switch (ActionState) {
-		case EActionState::EAS_Attack01:
-			ActionState = EActionState::EAS_Attack02;
-			SectionName = FName("Attack02");
-			break;
-		case EActionState::EAS_Attack02:
-			ActionState = EActionState::EAS_Attack01;
-			SectionName = FName("Attack01");
-			break;
-		case EActionState::EAS_Unoccupied:
-			ActionState = EActionState::EAS_Attack01;
-			SectionName = FName("Attack01");
-			break;
-		default:
-			return;
-			break;
-	}
-
-	/**
-	* PLAYS THE MONTAGE THEN JUMPS TO SECTION NAME MONTAGE
-	* NEXT ACTION SECTION IS DETERMINED IN ANIM NOTIFY STATE
-	*/
-	PlayAttackMontage(SectionName);
-}
-
-void ASlashCharacter::Drop(const FInputActionValue& Value)
-{
-	const float bValue = Value.Get<bool>();
-
-	if (Controller && bValue) {
-		if (EquippedWeapon && CanDisarm()) {
-			EquippedWeapon->Drop(this->GetActorLocation(), this->GetActorForwardVector());
-			CharacterState = ECharacterState::ECS_Unequipped;
-			EquippedWeapon = nullptr;
-		}
-	}
-}
-
-void ASlashCharacter::PlayAttackMontage(const FName& SectionName)
-{
-	TObjectPtr<UAnimInstance> AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && AttackMontage) {
-		AnimInstance->Montage_Play(AttackMontage);
-		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
-	}
-}
 
 void ASlashCharacter::AttackEnd()
 {
-	ActionState = EActionState::EAS_Unoccupied;
+	if (EquippedWeapon) EquippedWeapon->SetWeaponActionState(EActionState::EAS_Unoccupied);
 }
 
+
+void ASlashCharacter::SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (EquippedWeapon) EquippedWeapon->SetWeaponCollision(CollisionEnabled);
+}
+
+
+/**
+*	CHARACTER DEFAULTS
+*/
 
 void ASlashCharacter::Tick(float DeltaTime)
 {
@@ -254,12 +241,3 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	}
 
 }
-
-void ASlashCharacter::SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled)
-{
-	if (EquippedWeapon && EquippedWeapon->GetWeaponBox()) {
-		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-		EquippedWeapon->IgnoreActors.Empty();
-	}
-}
-
