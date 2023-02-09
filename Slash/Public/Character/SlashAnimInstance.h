@@ -5,6 +5,7 @@
 #include "InputAction.h"
 #include "CharacterTypes.h"
 #include "../Items/Weapons/WeaponTypes.h"
+
 #include "SlashAnimInstance.generated.h"
 
 UCLASS()
@@ -34,4 +35,6 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 		UPROPERTY(BlueprintReadOnly, Category = "Movement|Action State")
 		EActionState ActionState = EActionState::EAS_Unoccupied;
+
+
 };

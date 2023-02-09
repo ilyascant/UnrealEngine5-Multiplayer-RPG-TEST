@@ -20,13 +20,14 @@ class SLASH_API AWeapon : public AItem
 		virtual void Drop(const FVector& PlayerLocation, const FVector& PlayerForward) override;
 
 		bool CanAttack();
-		void Attack(const FInputActionValue& Value);
+		void Attack();
 		void PlayAttackMontage(const FName& SectionName);
 
 		bool AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName);
 		bool DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName);
 		void SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled);
 
+		virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		TArray<TObjectPtr<AActor>> IgnoreActors;
 
 	protected:
@@ -57,9 +58,9 @@ class SLASH_API AWeapon : public AItem
 	public:
 		FORCEINLINE TObjectPtr<UBoxComponent> GetWeaponBox() const { return WeaponBoxComp; };
 		FORCEINLINE EActionState GetWeaponActionState() { return WeaponActionState; }
-		FORCEINLINE void SetWeaponActionState(const EActionState& State) { WeaponActionState = State; }
+		FORCEINLINE void SetWeaponActionState(const EActionState State) { WeaponActionState = State; }
 		FORCEINLINE bool GetbComboPerm() { return bComboPerm; }
-		FORCEINLINE void SetbComboPerm(const bool& Perm) { bComboPerm = Perm; }
+		FORCEINLINE void SetbComboPerm(const bool Perm) { bComboPerm = Perm; }
 
 		
 		

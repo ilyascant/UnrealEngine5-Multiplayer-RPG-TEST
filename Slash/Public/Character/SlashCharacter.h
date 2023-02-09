@@ -17,7 +17,6 @@ class AItem;
 class AWeapon;
 class UAnimMontage;
 
-
 UCLASS()
 class SLASH_API ASlashCharacter : public ACharacter
 {
@@ -25,12 +24,11 @@ class SLASH_API ASlashCharacter : public ACharacter
 
 public:
 	ASlashCharacter();
-
+	
+	virtual void PostInitializeComponents() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	UFUNCTION(BlueprintCallable)
-	void SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -53,36 +51,20 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> SlashCharacterMappingContext;
 
-	/** 
-		Callbacks For Input
-	*/
-
-	virtual void Move(const FInputActionValue& Value);
-	virtual void Look(const FInputActionValue& Value);
-	virtual void Zoom(const FInputActionValue& Value);
-	virtual void Equip(const FInputActionValue& Value);
-	virtual void Attack(const FInputActionValue& Value);
-	virtual void Drop(const FInputActionValue& Value);
 
 	/**
-		Play Montage Functions
+		Combat
 	*/
-
-	void PlayEquipMontage(const FName Selection);
-
-	UFUNCTION(BlueprintCallable)
-	void AttackEnd();
-	bool CanDisarm();
-	bool CanArm();
-
-	UFUNCTION(BlueprintCallable)
-	void Disarm();	
-	UFUNCTION(BlueprintCallable)
-	void Arm();
-	UFUNCTION(BlueprintCallable)
-	void ArmEnd();
+	void EquipWeapon(AItem* EquipItem);
+	void DropWeapon();
+	void AttackWeapon();
 
 
+	/**
+		COMPONENTS
+	*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TObjectPtr<class UCombatComponent> CombatComponent;
 
 private:
 
@@ -94,9 +76,7 @@ private:
 	TObjectPtr<UGroomComponent> Hair;
 	UPROPERTY(VisibleAnywhere, Category = "Hair")
 	TObjectPtr<UGroomComponent> Eyebrows;
-	UPROPERTY(VisibleInstanceOnly)
 
-	TObjectPtr<AItem> OverlappingItem;
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	TObjectPtr<AWeapon> EquippedWeapon;
 
@@ -105,8 +85,20 @@ private:
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
 	/**
+		Callbacks For Input
+	*/
+
+	virtual void Move(const FInputActionValue& Value);
+	virtual void Look(const FInputActionValue& Value);
+	virtual void Zoom(const FInputActionValue& Value);
+	virtual void Equip(const FInputActionValue& Value);
+	virtual void Attack(const FInputActionValue& Value);
+	virtual void Drop(const FInputActionValue& Value);
+
+	/**
 		 Animation Montages
 	*/
+
 	UPROPERTY(EditDefaultsOnly, Category = "Montages")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
@@ -117,14 +109,34 @@ private:
 	/**
 		Widget
 	*/
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> OverheadWidget;
 
 
+	/**
+		REPLICATION
+	*/
+
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingItem, VisibleInstanceOnly)
+	AItem* OverlappingItem;
+	UFUNCTION()
+	void OnRep_OverlappingItem(AItem* LastOverlappingWeapon);
+	
+	UFUNCTION(Server, Reliable)
+	void ServerEquipButtonPressed();
+	UFUNCTION(Server, Reliable)
+	void ServerDropButtonPressed();	
+	UFUNCTION(Server, Reliable)
+	void ServerAttackButtonPressed();
+
+
 public:
-	FORCEINLINE virtual void SetOverlappingItem(TObjectPtr<AItem> Item) { OverlappingItem = Item; }
+	virtual void SetOverlappingItem(AItem* Item);
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+	FORCEINLINE void SetCharacterState(ECharacterState State) { CharacterState = State; }
 	FORCEINLINE TObjectPtr<AWeapon> GetEquippedWeapon() { return EquippedWeapon; }
+	FORCEINLINE void SetEquippedWeapon(AWeapon* Weapon) { EquippedWeapon = Weapon; }
 
 
 };

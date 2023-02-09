@@ -5,16 +5,19 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interfaces/HitInterface.h"
 #include "Animation/AnimMontage.h"
+#include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 
 
 AWeapon::AWeapon() {
+	ItemName = FName(TEXT("Sword"));
+
 	WeaponBoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BOX COMPONENT"));
 	WeaponBoxComp->SetupAttachment(GetRootComponent());
 	WeaponBoxComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponBoxComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	//WeaponBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
-	
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(GetRootComponent());
 
@@ -24,10 +27,13 @@ AWeapon::AWeapon() {
 
 void AWeapon::BeginPlay()
 {
-
 	Super::BeginPlay();
-
 	WeaponBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnBoxOverlap);
+}
+
+void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	AItem::GetLifetimeReplicatedProps(OutLifetimeProps);
 }
 
 /**
@@ -96,10 +102,17 @@ void AWeapon::Equip(USceneComponent* InParent, const FName& InSocketName) {
 	AttachMeshToSocket(InParent, InSocketName);
 }
 
+bool AWeapon::AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName)
+{
+	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+	this->AttachToComponent(InParent, TransformRules, InSocketName);
+	return true;
+}
+
 void AWeapon::Drop(const FVector& PlayerLocation, const FVector& PlayerForward){
 	const FDetachmentTransformRules DetachmentRules(EDetachmentRule::KeepWorld, true);
 	this->DetachFromActor(DetachmentRules);
-	this->ItemState = EItemState::EIS_Hovering;
+	this->SetItemState(EItemState::EIS_Hovering);
 
 	FHitResult Hit;
 	FVector StartLoc = PlayerLocation + FVector(PlayerForward.X * 200, PlayerForward.Y * 200, 150.f);
@@ -114,16 +127,6 @@ void AWeapon::Drop(const FVector& PlayerLocation, const FVector& PlayerForward){
 			this->SetActorRotation(Rotation);
 		}
 	}
-}
-
-bool AWeapon::AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName)
-{
-	if (AItem::Item) {
-		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-		AItem::Item->AttachToComponent(InParent, TransformRules, InSocketName);
-		return true;
-	}
-	return false;
 }
 
 bool AWeapon::DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName)
@@ -154,10 +157,10 @@ bool AWeapon::CanAttack()
 	return  (this->GetbComboPerm() ||
 			(WeaponActionState == EActionState::EAS_Unoccupied
 				&& SlashCharacter->GetCharacterState() != ECharacterState::ECS_Unequipped
-				&& this->ItemState == EItemState::EIS_Equiped));
+				&& this->GetItemState() == EItemState::EIS_Equiped));
 }
 
-void AWeapon::Attack(const FInputActionValue& Value)
+void AWeapon::Attack()
 {
 	SlashCharacter = Cast<ASlashCharacter>(this->GetAttachParentActor());
 	if (!SlashCharacter || !CanAttack()) return;

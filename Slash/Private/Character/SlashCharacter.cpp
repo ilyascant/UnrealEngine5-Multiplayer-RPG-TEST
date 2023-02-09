@@ -1,20 +1,23 @@
 #include "Character/SlashCharacter.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GroomComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Slash/DebugMacros.h"
+#include "Components/ActorComponent.h"
+#include "CombatComponent.h"
+
+#include "Net/UnrealNetwork.h"
 
 
 ASlashCharacter::ASlashCharacter() {
-
 	PrimaryActorTick.bCanEverTick = true;
 
 	TObjectPtr<UCharacterMovementComponent> CharMov = GetCharacterMovement();
@@ -40,7 +43,28 @@ ASlashCharacter::ASlashCharacter() {
 	Eyebrows->AttachmentName = FString("head");
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
-	OverheadWidget->SetupAttachment(RootComponent);
+	OverheadWidget->SetupAttachment(GetRootComponent());
+
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	CombatComponent->SetIsReplicated(true);
+
+}
+
+
+void ASlashCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	if (CombatComponent)
+	{
+		CombatComponent->Character = this;
+	}
+}
+
+void ASlashCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ASlashCharacter, OverlappingItem, COND_OwnerOnly);
 
 }
 
@@ -56,6 +80,12 @@ void ASlashCharacter::BeginPlay()
 	}
 	
 }
+
+void ASlashCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 
 /**
 *	CHARACTER MOVEMENT
@@ -92,6 +122,7 @@ void ASlashCharacter::Look(const FInputActionValue& Value)
 
 void ASlashCharacter::Zoom(const FInputActionValue& Value)
 {
+
 	const float FloatValue = Value.Get<float>();
 	ZoomFactor += FloatValue * 4;
 	ZoomFactor = FMath::Clamp<float>(ZoomFactor, 0.f, 1.0f);
@@ -107,123 +138,54 @@ void ASlashCharacter::Zoom(const FInputActionValue& Value)
 
 void ASlashCharacter::Equip(const FInputActionValue& Value)
 {
-	TObjectPtr<AWeapon> OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
-	if (EquippedWeapon && OverlappingWeapon) {
-		EquippedWeapon->Drop(this->GetActorLocation(), this->GetActorForwardVector());
-		EquippedWeapon = nullptr;
-	};
+	if (Controller) {
+		EquipWeapon(OverlappingItem);
+	}
+}
 
-	const float bValue = Value.Get<bool>();
-	
-	if(Controller && bValue){
-		if (OverlappingWeapon){
-			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
-			OverlappingWeapon->ItemState = EItemState::EIS_Equiped;
-			CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
-			EquippedWeapon = OverlappingWeapon;
-			OverlappingItem = nullptr;
-		}
-		else {
-			if (CanDisarm()) {
-				PlayEquipMontage(FName("Unequip"));
-				CharacterState = ECharacterState::ECS_Unequipped;
-			}
-			else if (CanArm()) {
-				PlayEquipMontage(FName("Equip"));
-				CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
-			}
-		}
+void ASlashCharacter::EquipWeapon(AItem* EquipItem) {
+	if (HasAuthority()) {
+		CombatComponent->EquipWeapon(EquipItem);
+	}
+	else {
+		ServerEquipButtonPressed();
 	}
 }
 
 void ASlashCharacter::Drop(const FInputActionValue& Value)
 {
-	const float bValue = Value.Get<bool>();
-
-	if (Controller && bValue) {
-		if (EquippedWeapon && EquippedWeapon->ItemState != EItemState::EIS_Equipping && CanDisarm()) {
-			EquippedWeapon->Drop(this->GetActorLocation(), this->GetActorForwardVector());
-			CharacterState = ECharacterState::ECS_Unequipped;
-			EquippedWeapon = nullptr;
-		}
+	if (Controller) {
+		DropWeapon();
 	}
 }
 
-bool ASlashCharacter::CanDisarm() {
-	return (EquippedWeapon && 
-		EquippedWeapon->ItemState == EItemState::EIS_Equiped &&
-		EquippedWeapon->GetWeaponActionState() == EActionState::EAS_Unoccupied &&
-		CharacterState != ECharacterState::ECS_Unequipped);
-}
-
-bool ASlashCharacter::CanArm() {
-	return (EquippedWeapon && 
-		EquippedWeapon->ItemState == EItemState::EIS_Equiped &&
-		EquippedWeapon->GetWeaponActionState() == EActionState::EAS_Unoccupied &&
-		CharacterState == ECharacterState::ECS_Unequipped);
-}
-
-void ASlashCharacter::Disarm()
+void ASlashCharacter::DropWeapon()
 {
-	if (EquippedWeapon) {
-		EquippedWeapon->ItemState = EItemState::EIS_Equiped;
-		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("WeaponSocket"));
+	if (HasAuthority()) {
+		CombatComponent->DropWeapon();
+	}
+	else {
+		ServerDropButtonPressed();
 	}
 }
-
-void ASlashCharacter::Arm()
-{
-	if (EquippedWeapon) EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
-	
-}
-void ASlashCharacter::ArmEnd()
-{
-	if (EquippedWeapon) EquippedWeapon->ItemState = EItemState::EIS_Equiped;
-}
-
-void ASlashCharacter::PlayEquipMontage(const FName Selection) {
-	TObjectPtr<UAnimInstance> AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && EquipMontage) {
-		EquippedWeapon->ItemState = EItemState::EIS_Equipping;
-		AnimInstance->Montage_Play(EquipMontage);
-		AnimInstance->Montage_JumpToSection(Selection, EquipMontage);
-	}
-
-}
-
-/**
-*	CHARACTER COMBAT
-*	Since Combat depands on Weapon selection
-*	Character class call Weapon class for Attack options
-*	Each Weapon have their own unique combat options
-*/
 
 void ASlashCharacter::Attack(const FInputActionValue& Value) {
-	EquippedWeapon->Attack(Value);
+	if (Controller && EquippedWeapon) AttackWeapon();
 }
 
-
-void ASlashCharacter::AttackEnd()
+void ASlashCharacter::AttackWeapon() 
 {
-	if (EquippedWeapon) EquippedWeapon->SetWeaponActionState(EActionState::EAS_Unoccupied);
+	if (HasAuthority()) {
+		CombatComponent->AttackWeapon();
+	}
+	else {
+		ServerAttackButtonPressed();
+	}
 }
-
-
-void ASlashCharacter::SetWeaponCollision(ECollisionEnabled::Type CollisionEnabled)
-{
-	if (EquippedWeapon) EquippedWeapon->SetWeaponCollision(CollisionEnabled);
-}
-
 
 /**
-*	CHARACTER DEFAULTS
+*	CHARACTER INPUT SETUP
 */
-
-void ASlashCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 
 void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -241,3 +203,47 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	}
 
 }
+
+/**
+*	REPLICATION
+*/
+
+void ASlashCharacter::SetOverlappingItem(AItem* Item) {
+	if (OverlappingItem) {
+		OverlappingItem->SetPickUpWidgetVisiblity(false);
+	}
+	OverlappingItem = Item;
+	if (IsLocallyControlled()) {
+		if (OverlappingItem) {
+			OverlappingItem->SetPickUpWidgetVisiblity(true);
+		}
+	}
+}
+
+void ASlashCharacter::OnRep_OverlappingItem(AItem* LastOverlappingWeapon)
+{
+	if (OverlappingItem) {
+		OverlappingItem->SetPickUpWidgetVisiblity(true);
+	}
+	else if (LastOverlappingWeapon) {
+		LastOverlappingWeapon->SetPickUpWidgetVisiblity(false);
+	}
+}
+
+void ASlashCharacter::ServerEquipButtonPressed_Implementation()
+{
+	if(CombatComponent)
+		CombatComponent->EquipWeapon(OverlappingItem);
+}
+
+void ASlashCharacter::ServerDropButtonPressed_Implementation()
+{
+	if (CombatComponent)
+		CombatComponent->DropWeapon();
+}
+void ASlashCharacter::ServerAttackButtonPressed_Implementation()
+{
+	if (CombatComponent)
+		CombatComponent->AttackWeapon();
+}
+
