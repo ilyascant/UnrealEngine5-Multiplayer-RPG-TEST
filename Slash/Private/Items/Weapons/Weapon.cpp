@@ -11,6 +11,7 @@
 
 AWeapon::AWeapon() {
 	ItemName = FName(TEXT("Sword"));
+	ItemType = EItemType::EIT_Sword;
 
 	WeaponBoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BOX COMPONENT"));
 	WeaponBoxComp->SetupAttachment(GetRootComponent());
@@ -27,7 +28,7 @@ AWeapon::AWeapon() {
 
 void AWeapon::BeginPlay()
 {
-	Super::BeginPlay();
+	AItem::BeginPlay();
 	WeaponBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnBoxOverlap);
 }
 
@@ -96,47 +97,26 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 *	WEAPON INTERACTIONS
 */
 
-
-
 void AWeapon::Equip(USceneComponent* InParent, const FName& InSocketName) {
-	AttachMeshToSocket(InParent, InSocketName);
+	AItem::Equip(InParent, InSocketName);
 }
+
 
 bool AWeapon::AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName)
 {
-	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	this->AttachToComponent(InParent, TransformRules, InSocketName);
-	return true;
+	return AItem::AttachMeshToSocket(InParent, InSocketName);
 }
 
+
 void AWeapon::Drop(const FVector& PlayerLocation, const FVector& PlayerForward){
-	const FDetachmentTransformRules DetachmentRules(EDetachmentRule::KeepWorld, true);
-	this->DetachFromActor(DetachmentRules);
-	this->SetItemState(EItemState::EIS_Hovering);
+	AItem::Drop(PlayerLocation, PlayerForward);
 
-	FHitResult Hit;
-	FVector StartLoc = PlayerLocation + FVector(PlayerForward.X * 200, PlayerForward.Y * 200, 150.f);
-	FVector EndLoc = StartLoc + FVector(0.f, 0.f, -500.f);
-	FRotator Rotation = FRotator(0.f, 0.f, 0.f);
-
-	TObjectPtr<UWorld> World = this->GetWorld();
-	if (World) {
-		GetWorld()->LineTraceSingleByChannel(Hit, StartLoc, EndLoc, ECC_Visibility);
-		if (Hit.bBlockingHit) {
-			this->SetActorLocation(FVector(Hit.Location.X, Hit.Location.Y, Hit.Location.Z + 150.f));
-			this->SetActorRotation(Rotation);
-		}
-	}
 }
 
 bool AWeapon::DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName)
 {
-	if (AItem::Item) {
-		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-		AItem::Item->AttachToComponent(InParent, TransformRules, InSocketName);
-		return true;
-	}
-	return false;
+	return AItem::DetachFromComponent(InParent, InSocketName);
+
 }
 
 

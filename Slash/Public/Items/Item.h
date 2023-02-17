@@ -16,6 +16,13 @@ enum class EItemState : uint8 {
 	EIS_Equiped UMETA(DisplayName = "Equiped"),
 };
 
+UENUM(BlueprintType)
+enum class EItemType : uint8 {
+	EIT_Sword UMETA(DisplayName = "Sword"),
+	EIT_Gun  UMETA(DisplayName = "Gun"),
+	EIT_Other UMETA(DisplayName = "Other"),
+};
+
 UCLASS()
 class SLASH_API AItem : public AActor
 {
@@ -31,6 +38,11 @@ class SLASH_API AItem : public AActor
 		void SetPickUpWidgetVisiblity(const bool setValue);
 		virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+		UFUNCTION()
+		virtual void Equip(USceneComponent* InParent, const FName& InSocketName);
+		UFUNCTION()
+		virtual void Drop(const FVector& PlayerLocation, const FVector& PlayerForward);
+
 	protected:
 		virtual void BeginPlay() override;
 	
@@ -38,15 +50,17 @@ class SLASH_API AItem : public AActor
 		virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 		UFUNCTION()
 		virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
-		UFUNCTION()
-		virtual void Equip(USceneComponent* InParent, const FName& InSocketName);
-		UFUNCTION()
-		virtual void Drop(const FVector& PlayerLocation, const FVector& PlayerForward);
+
+		virtual bool AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName);
+		virtual bool DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName);
 
 
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		TObjectPtr<UStaticMeshComponent> Item;
+
+		EItemType ItemType = EItemType::EIT_Other;
+		UPROPERTY(ReplicatedUsing = OnRep_ItemState, VisibleAnywhere, Category = "Item Properties")
+		EItemState ItemState;
 
 		UFUNCTION()
 		void FloatingItem(float& Time, const float& Amplitude, const float& TimeConstant);
@@ -66,12 +80,14 @@ class SLASH_API AItem : public AActor
 		UPROPERTY(EditAnywhere, Category = "Floating in Air")
 		float TimeConstant = 5.f;
 
-		UPROPERTY(ReplicatedUsing = OnRep_ItemState, VisibleAnywhere, Category = "Item Properties")
-		EItemState ItemState;
 		UFUNCTION()
 		void OnRep_ItemState();
 	public:
 		UFUNCTION(BlueprintCallable)
 		void SetItemState(EItemState State);
-		FORCEINLINE EItemState GetItemState() { return ItemState; };
+		FORCEINLINE EItemState GetItemState() { return ItemState; };	
+
+		UFUNCTION(BlueprintCallable)
+		FORCEINLINE void SetItemType(EItemType Type) { ItemType = Type; };
+		FORCEINLINE EItemType GetItemType() { return ItemType; };
 };

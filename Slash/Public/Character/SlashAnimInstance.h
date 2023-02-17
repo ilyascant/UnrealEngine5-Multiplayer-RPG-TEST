@@ -29,7 +29,32 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 		float GroundSpeed;
 		
 		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		bool bIsAccelerating;
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
 		bool bIsFalling;
+
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		bool bIsCrouching;		
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Equipment")
+		bool bWeaponEquipped;
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Equipment")
+		bool bGunEquipped;
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Equipment")
+		bool bIsAiming;		
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		float YawOffset;		
+		
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		float Lean;
+
+		FRotator CharacterRotationLastFrame;
+		FRotator CharacterRotation;
+		FRotator DeltaRotation;
 
 		UPROPERTY(BlueprintReadOnly, Category = "Movement|Character State")
 		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;

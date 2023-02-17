@@ -8,6 +8,7 @@
 #include "Animation/AnimMontage.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
+#include "Items/Weapons/GunWeapon.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Slash/DebugMacros.h"
@@ -47,6 +48,8 @@ ASlashCharacter::ASlashCharacter() {
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	CombatComponent->SetIsReplicated(true);
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 }
 
@@ -169,8 +172,26 @@ void ASlashCharacter::DropWeapon()
 	}
 }
 
+void ASlashCharacter::CrouchPressed(const FInputActionValue& Value)
+{
+	float crouchValue = Value.Get<float>();
+	if (Controller) {
+		crouchValue > 0 ? Crouch() : UnCrouch();
+		
+	}
+}
+
+void ASlashCharacter::AimPressed(const FInputActionValue& Value)
+{
+	float aimValue = Value.Get<float>();
+	if (Controller && CombatComponent) {
+		aimValue > 0 ? CombatComponent->SetAiming(true) : CombatComponent->SetAiming(false);
+
+	}
+}
+
 void ASlashCharacter::Attack(const FInputActionValue& Value) {
-	if (Controller && EquippedWeapon) AttackWeapon();
+	if (Controller && CombatComponent->EquippedWeapon) AttackWeapon();
 }
 
 void ASlashCharacter::AttackWeapon() 
@@ -200,6 +221,8 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Equip);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Attack);
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Drop);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &ASlashCharacter::CrouchPressed);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ASlashCharacter::AimPressed);
 	}
 
 }
@@ -207,6 +230,27 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 /**
 *	REPLICATION
 */
+
+
+TObjectPtr<AWeapon> ASlashCharacter::GetEquippedWeapon()
+{
+	return CombatComponent->EquippedWeapon;
+}
+
+void ASlashCharacter::SetEquippedWeapon(TObjectPtr<AWeapon> Weapon)
+{
+	CombatComponent->EquippedWeapon = Weapon;
+}
+
+TObjectPtr<AGunWeapon> ASlashCharacter::GetEquippedGunWeapon()
+{
+	return CombatComponent->EquippedGunWeapon;
+}
+
+void ASlashCharacter::SetEquippedGunWeapon(TObjectPtr<AGunWeapon> Weapon)
+{
+	CombatComponent->EquippedGunWeapon = Weapon;
+}
 
 void ASlashCharacter::SetOverlappingItem(AItem* Item) {
 	if (OverlappingItem) {
@@ -247,3 +291,6 @@ void ASlashCharacter::ServerAttackButtonPressed_Implementation()
 		CombatComponent->AttackWeapon();
 }
 
+bool ASlashCharacter::IsAiming() {
+		return CombatComponent && CombatComponent->bAiming;
+}

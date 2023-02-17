@@ -6,6 +6,7 @@
 
 class AWeapon;
 class AItem;
+class AGunWeapon;
 class ASlashCharacter;
 class UAnimMontage;
 
@@ -23,11 +24,26 @@ class SLASH_API UCombatComponent : public UActorComponent
 	protected:
 		virtual void BeginPlay() override;
 		void EquipWeapon(AItem* EquipItem);
+		void EquipWeapon(AWeapon* EquipItem);
+		void EquipWeapon(AGunWeapon* EquipItem);
 		void DropWeapon();
 		void PlayEquipMontage(const FName Selection);
 
+		void SetAiming(bool bIsAiming);
+		UFUNCTION(Server, Reliable)
+		void ServerSetAiming(bool bIsAiming);
+
+		UFUNCTION()
+		void OnRep_EquippedGunWeapon();
+
 	private:
 		ASlashCharacter* Character;
+
+		UPROPERTY(Replicated, VisibleAnywhere, Category = "Weapon")
+		TObjectPtr<AWeapon> EquippedWeapon;		
+		UPROPERTY(ReplicatedUsing = OnRep_EquippedGunWeapon, VisibleAnywhere, Category = "Weapon")
+		TObjectPtr<AGunWeapon> EquippedGunWeapon;
+
 		bool CanDisarm();
 		bool CanArm();
 		void AttackWeapon();
@@ -41,6 +57,10 @@ class SLASH_API UCombatComponent : public UActorComponent
 		void Arm();
 		UFUNCTION(BlueprintCallable)
 		void ArmEnd();
+
+		UPROPERTY(Replicated)
+		bool bAiming;
+
 
 
 		UPROPERTY(EditDefaultsOnly, Category = "Montages")

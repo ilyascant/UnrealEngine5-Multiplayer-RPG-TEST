@@ -15,6 +15,7 @@ class UCameraComponent;
 class UGroomComponent;
 class AItem;
 class AWeapon;
+class AGunWeapon;
 class UAnimMontage;
 
 UCLASS()
@@ -47,6 +48,10 @@ protected:
 	TObjectPtr<UInputAction> AttackAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> DropAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> CrouchAction;	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> AimAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> SlashCharacterMappingContext;
@@ -77,9 +82,6 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Hair")
 	TObjectPtr<UGroomComponent> Eyebrows;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
-	TObjectPtr<AWeapon> EquippedWeapon;
-
 	float ZoomFactor ;
 
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -94,6 +96,8 @@ private:
 	virtual void Equip(const FInputActionValue& Value);
 	virtual void Attack(const FInputActionValue& Value);
 	virtual void Drop(const FInputActionValue& Value);
+	virtual void CrouchPressed(const FInputActionValue& Value);
+	virtual void AimPressed(const FInputActionValue& Value);
 
 	/**
 		 Animation Montages
@@ -135,8 +139,11 @@ public:
 	virtual void SetOverlappingItem(AItem* Item);
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 	FORCEINLINE void SetCharacterState(ECharacterState State) { CharacterState = State; }
-	FORCEINLINE TObjectPtr<AWeapon> GetEquippedWeapon() { return EquippedWeapon; }
-	FORCEINLINE void SetEquippedWeapon(AWeapon* Weapon) { EquippedWeapon = Weapon; }
+	TObjectPtr<AWeapon> GetEquippedWeapon();
+	void SetEquippedWeapon(TObjectPtr<AWeapon> Weapon);	
+	TObjectPtr<AGunWeapon> GetEquippedGunWeapon();
+	void SetEquippedGunWeapon(TObjectPtr<AGunWeapon> Weapon);
+	bool IsAiming();
 
 
 };

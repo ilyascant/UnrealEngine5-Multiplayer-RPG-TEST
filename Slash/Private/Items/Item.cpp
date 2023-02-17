@@ -4,6 +4,7 @@
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Net/UnrealNetwork.h"
+#include <Slash/DebugMacros.h>
 
 
 AItem::AItem()
@@ -72,14 +73,48 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 
 }
 
-void AItem::Equip(USceneComponent* InParent, const FName& InSocketName)
-{
+
+void AItem::Equip(USceneComponent* InParent, const FName& InSocketName) {
+	AttachMeshToSocket(InParent, InSocketName);
 }
 
+bool AItem::AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName)
+{
+	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+	this->AttachToComponent(InParent, TransformRules, InSocketName);
+	return true;
+}
 
 void AItem::Drop(const FVector& PlayerLocation, const FVector& PlayerForward) {
+	const FDetachmentTransformRules DetachmentRules(EDetachmentRule::KeepWorld, true);
+	this->DetachFromActor(DetachmentRules);
+	this->SetItemState(EItemState::EIS_Hovering);
 
+	FHitResult Hit;
+	FVector StartLoc = PlayerLocation + FVector(PlayerForward.X * 200, PlayerForward.Y * 200, 150.f);
+	FVector EndLoc = StartLoc + FVector(0.f, 0.f, -500.f);
+	FRotator Rotation = FRotator(0.f, 0.f, 0.f);
+
+	TObjectPtr<UWorld> World = this->GetWorld();
+	if (World) {
+		GetWorld()->LineTraceSingleByChannel(Hit, StartLoc, EndLoc, ECC_Visibility);
+		if (Hit.bBlockingHit) {
+			this->SetActorLocation(FVector(Hit.Location.X, Hit.Location.Y, Hit.Location.Z + 150.f));
+			this->SetActorRotation(Rotation);
+		}
+	}
 }
+
+bool AItem::DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName)
+{
+	if (Item) {
+		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+		Item->AttachToComponent(InParent, TransformRules, InSocketName);
+		return true;
+	}
+	return false;
+}
+
 
 void AItem::FloatingItem(float& _Time, const float& _Amplitude, const float& _TimeConstant)
 {
@@ -100,10 +135,15 @@ void AItem::SetItemState(EItemState State)
 	ItemState = State;
 	switch (ItemState)
 	{
-	case EItemState::EIS_Equiped:
-		SetPickUpWidgetVisiblity(false);
-		SphereArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		break;
+		case EItemState::EIS_Equiped:
+			SetPickUpWidgetVisiblity(false);
+			SphereArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			break;
+		case EItemState::EIS_Hovering:
+			SetPickUpWidgetVisiblity(true);
+			SphereArea->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		default:
+			break;
 	}
 }
 
@@ -111,9 +151,13 @@ void AItem::OnRep_ItemState()
 {
 	switch (ItemState)
 	{
-	case EItemState::EIS_Equiped:
-		SetPickUpWidgetVisiblity(false);
-		break;
+		case EItemState::EIS_Equiped:
+			SetPickUpWidgetVisiblity(false);
+			break;
+		case EItemState::EIS_Hovering:
+			SetPickUpWidgetVisiblity(true);
+		default:
+			break;
 	}
 }
 
