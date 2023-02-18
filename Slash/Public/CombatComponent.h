@@ -34,12 +34,14 @@ class SLASH_API UCombatComponent : public UActorComponent
 		void ServerSetAiming(bool bIsAiming);
 
 		UFUNCTION()
-		void OnRep_EquippedGunWeapon();
+		void OnRep_EquippedGunWeapon();	
+		UFUNCTION()
+		void OnRep_EquippedWeapon();
 
 	private:
 		ASlashCharacter* Character;
 
-		UPROPERTY(Replicated, VisibleAnywhere, Category = "Weapon")
+		UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon, VisibleAnywhere, Category = "Weapon")
 		TObjectPtr<AWeapon> EquippedWeapon;		
 		UPROPERTY(ReplicatedUsing = OnRep_EquippedGunWeapon, VisibleAnywhere, Category = "Weapon")
 		TObjectPtr<AGunWeapon> EquippedGunWeapon;
@@ -60,6 +62,11 @@ class SLASH_API UCombatComponent : public UActorComponent
 
 		UPROPERTY(Replicated)
 		bool bAiming;
+
+		UPROPERTY(EditAnywhere)
+		float BaseWalkSpeed;
+		UPROPERTY(EditAnywhere)
+		float AimWalkSpeed;
 
 
 

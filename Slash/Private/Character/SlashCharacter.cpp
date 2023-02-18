@@ -14,6 +14,7 @@
 #include "Slash/DebugMacros.h"
 #include "Components/ActorComponent.h"
 #include "CombatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -87,6 +88,7 @@ void ASlashCharacter::BeginPlay()
 void ASlashCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	AimOffset(DeltaTime);
 }
 
 
@@ -201,6 +203,38 @@ void ASlashCharacter::AttackWeapon()
 	}
 	else {
 		ServerAttackButtonPressed();
+	}
+}
+
+void ASlashCharacter::AimOffset(float Delta)
+{
+	if (CombatComponent && CombatComponent->EquippedGunWeapon == nullptr) return;
+	FVector Velocity = this->GetVelocity();
+	float GroundSpeed = UKismetMathLibrary::VSizeXY(Velocity);
+	bool bIsInAir = this->GetCharacterMovement()->IsFalling();
+
+	if (GroundSpeed == 0.f && !bIsInAir) // Standing still, not jumping
+	{
+		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartingAimRotation);
+		AO_Yaw = DeltaAimRotation.Yaw;
+		bUseControllerRotationYaw = false;
+
+	}
+	if (GroundSpeed > 0.f || bIsInAir) // Running or Jumpping
+	{
+		StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		AO_Yaw = 0.f;
+		bUseControllerRotationYaw = true;
+	}
+
+	AO_Pitch = GetBaseAimRotation().Pitch;
+	if (!IsLocallyControlled() && AO_Pitch > 90.f)
+	{
+		// map pitch from [270, 360) to [-90, 0)
+		FVector2D InRange(270.f, 370.f);
+		FVector2D OutRange(-90.f, 0.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
 }
 

@@ -63,6 +63,7 @@ protected:
 	void EquipWeapon(AItem* EquipItem);
 	void DropWeapon();
 	void AttackWeapon();
+	void AimOffset(float Delta);
 
 
 	/**
@@ -83,6 +84,9 @@ private:
 	TObjectPtr<UGroomComponent> Eyebrows;
 
 	float ZoomFactor ;
+	float AO_Yaw;
+	float AO_Pitch;
+	FRotator StartingAimRotation;
 
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
@@ -144,6 +148,8 @@ public:
 	TObjectPtr<AGunWeapon> GetEquippedGunWeapon();
 	void SetEquippedGunWeapon(TObjectPtr<AGunWeapon> Weapon);
 	bool IsAiming();
+	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
+	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 
 
 };

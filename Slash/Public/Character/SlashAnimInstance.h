@@ -61,5 +61,10 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 		UPROPERTY(BlueprintReadOnly, Category = "Movement|Action State")
 		EActionState ActionState = EActionState::EAS_Unoccupied;
 
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		float AO_Yaw;
+
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		float AO_Pitch;
 
 };

@@ -53,6 +53,9 @@ void USlashAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		const float Target = Delta.Yaw / DeltaTime;
 		const float Interp = FMath::FInterpTo(Lean, Target, DeltaTime, 6.f);
 		Lean = FMath::Clamp(Interp, -180.f, 180.f);
+
+		AO_Yaw = SlashCharacter->GetAO_Yaw();
+		AO_Pitch = SlashCharacter->GetAO_Pitch();
 	}
 	
 }

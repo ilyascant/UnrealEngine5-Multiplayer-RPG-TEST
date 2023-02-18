@@ -13,11 +13,16 @@
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	BaseWalkSpeed = 600.f;
+	AimWalkSpeed = 450.f;
 }
 
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Character) Character->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -51,14 +56,14 @@ void UCombatComponent::EquipWeapon(AItem* EquipItem)
 	switch (EquipItem->GetItemType()) {
 		case EItemType::EIT_Sword:
 		{
-			AWeapon* EquipThis = Cast<AWeapon>(EquipItem);
-			EquipWeapon(EquipThis);
+			EquippedWeapon = Cast<AWeapon>(EquipItem);
+			EquipWeapon(EquippedWeapon);
 			break;
 		}
 		case EItemType::EIT_Gun:
 		{
-			AGunWeapon* EquipThis = Cast<AGunWeapon>(EquipItem);
-			EquipWeapon(EquipThis);
+			EquippedGunWeapon = Cast<AGunWeapon>(EquipItem);
+			EquipWeapon(EquippedGunWeapon);
 			break;
 		}
 		default:
@@ -71,14 +76,11 @@ void UCombatComponent::EquipWeapon(AWeapon* EquipItem) {
 	//If already have EquippedWeapon or EquippedGunWeapon drop it.
 	DropWeapon();
 
-	EquippedWeapon = Character->GetEquippedWeapon();
+	EquippedWeapon->Equip(Character->GetMesh(), FName("RightHandSocket"));
+	EquippedWeapon->SetOwner(Character);
+	EquippedWeapon->SetPickUpWidgetVisiblity(false);
+	EquippedWeapon->SetItemState(EItemState::EIS_Equiped);
 
-	EquipItem->Equip(Character->GetMesh(), FName("RightHandSocket"));
-	EquipItem->SetOwner(Character);
-	EquipItem->SetPickUpWidgetVisiblity(false);
-	EquipItem->SetItemState(EItemState::EIS_Equiped);
-
-	Character->SetEquippedWeapon(EquipItem);
 	Character->SetCharacterState(ECharacterState::ECS_EquippedOneHandedWeapon);
 }
 
@@ -87,14 +89,11 @@ void UCombatComponent::EquipWeapon(AGunWeapon* EquipItem)
 	//If already have EquippedWeapon or EquippedGunWeapon drop it.
 	DropWeapon();
 
-	EquippedGunWeapon = Character->GetEquippedGunWeapon();
+	EquippedGunWeapon->Equip(Character->GetMesh(), FName("RightHandGunSocket"));
+	EquippedGunWeapon->SetOwner(Character);
+	EquippedGunWeapon->SetPickUpWidgetVisiblity(false);
+	EquippedGunWeapon->SetItemState(EItemState::EIS_Equiped);
 
-	EquipItem->Equip(Character->GetMesh(), FName("RightHandGunSocket"));
-	EquipItem->SetOwner(Character);
-	EquipItem->SetPickUpWidgetVisiblity(false);
-	EquipItem->SetItemState(EItemState::EIS_Equiped);
-
-	Character->SetEquippedGunWeapon(EquipItem);
 	Character->SetCharacterState(ECharacterState::ECS_EquippedOneHandedWeapon);
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
@@ -160,12 +159,15 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 {
 	bAiming = bIsAiming;
 	ServerSetAiming(bIsAiming);
+	if (Character) Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+
 }
 
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 {
 	bAiming = bIsAiming;
+	if (Character) Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 }
 
 void UCombatComponent::Disarm()
@@ -183,8 +185,31 @@ void UCombatComponent::Disarm()
 void UCombatComponent::OnRep_EquippedGunWeapon()
 {
 	if (EquippedGunWeapon && Character) {
+		//If already have EquippedWeapon or EquippedGunWeapon drop it.
+		DropWeapon();
+
+		EquippedGunWeapon->Equip(Character->GetMesh(), FName("RightHandGunSocket"));
+		EquippedGunWeapon->SetPickUpWidgetVisiblity(false);
+		EquippedGunWeapon->SetItemState(EItemState::EIS_Equiped);
+
+		Character->SetCharacterState(ECharacterState::ECS_EquippedOneHandedWeapon);
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
+	}
+}
+
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	if (EquippedWeapon && Character)
+	{
+		//If already have EquippedWeapon or EquippedGunWeapon drop it.
+		DropWeapon();
+
+		EquippedWeapon->Equip(Character->GetMesh(), FName("RightHandSocket"));
+		EquippedWeapon->SetPickUpWidgetVisiblity(false);
+		EquippedWeapon->SetItemState(EItemState::EIS_Equiped);
+
+		Character->SetCharacterState(ECharacterState::ECS_EquippedOneHandedWeapon);
 	}
 }
 
