@@ -53,6 +53,8 @@ ASlashCharacter::ASlashCharacter() {
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	TurningInPlace = ETurningInPlace::ETIP_NOT_TURNING;
+	NetUpdateFrequency = 66.f;
+	MinNetUpdateFrequency = 33.f;
 
 }
 
@@ -249,11 +251,11 @@ void ASlashCharacter::AimOffset(float Delta)
 
 void ASlashCharacter::TurnInPlace(float DeltaTime)
 {
-	if (AO_Yaw > 90.f) 
+	if (AO_Yaw >= 90.f) 
 	{
 		TurningInPlace = ETurningInPlace::ETIP_RIGHT;
 	}
-	else if (AO_Yaw < -90.f) 
+	else if (AO_Yaw <= -90.f) 
 	{
 		TurningInPlace = ETurningInPlace::ETIP_LEFT;
 	}
