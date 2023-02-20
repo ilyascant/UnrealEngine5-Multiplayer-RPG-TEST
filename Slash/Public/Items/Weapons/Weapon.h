@@ -60,12 +60,6 @@ class SLASH_API AWeapon : public AItem
 		FORCEINLINE EActionState GetWeaponActionState() { return WeaponActionState; }
 		FORCEINLINE void SetWeaponActionState(const EActionState State) { WeaponActionState = State; }
 		FORCEINLINE bool GetbComboPerm() { return bComboPerm; }
-		FORCEINLINE void SetbComboPerm(const bool Perm) { bComboPerm = Perm; }
-
-		
-		
-	
-
-		
+		FORCEINLINE void SetbComboPerm(const bool Perm) { bComboPerm = Perm; }	
 	
 };

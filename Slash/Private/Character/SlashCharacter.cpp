@@ -52,6 +52,8 @@ ASlashCharacter::ASlashCharacter() {
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
+	TurningInPlace = ETurningInPlace::ETIP_NOT_TURNING;
+
 }
 
 
@@ -95,6 +97,7 @@ void ASlashCharacter::Tick(float DeltaTime)
 /**
 *	CHARACTER MOVEMENT
 */
+
 
 void ASlashCharacter::Move(const FInputActionValue& Value)
 {
@@ -218,14 +221,19 @@ void ASlashCharacter::AimOffset(float Delta)
 		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartingAimRotation);
 		AO_Yaw = DeltaAimRotation.Yaw;
-		bUseControllerRotationYaw = false;
-
+		if (TurningInPlace == ETurningInPlace::ETIP_NOT_TURNING)
+		{
+			InterpAO_Yaw = AO_Yaw;
+		}
+		bUseControllerRotationYaw = true;
+		TurnInPlace(Delta);
 	}
 	if (GroundSpeed > 0.f || bIsInAir) // Running or Jumpping
 	{
 		StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AO_Yaw = 0.f;
 		bUseControllerRotationYaw = true;
+		TurningInPlace = ETurningInPlace::ETIP_NOT_TURNING;
 	}
 
 	AO_Pitch = GetBaseAimRotation().Pitch;
@@ -235,6 +243,30 @@ void ASlashCharacter::AimOffset(float Delta)
 		FVector2D InRange(270.f, 370.f);
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+	}
+}
+
+
+void ASlashCharacter::TurnInPlace(float DeltaTime)
+{
+	if (AO_Yaw > 90.f) 
+	{
+		TurningInPlace = ETurningInPlace::ETIP_RIGHT;
+	}
+	else if (AO_Yaw < -90.f) 
+	{
+		TurningInPlace = ETurningInPlace::ETIP_LEFT;
+	}
+
+	if (TurningInPlace != ETurningInPlace::ETIP_NOT_TURNING)
+	{
+		InterpAO_Yaw = FMath::FInterpTo(InterpAO_Yaw, 0.f, DeltaTime, 4.f);
+		AO_Yaw = InterpAO_Yaw;
+		if (FMath::Abs(AO_Yaw) < 15.f)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_NOT_TURNING;
+			StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		}
 	}
 }
 
@@ -268,21 +300,25 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 TObjectPtr<AWeapon> ASlashCharacter::GetEquippedWeapon()
 {
+	if (!CombatComponent) return nullptr;
 	return CombatComponent->EquippedWeapon;
 }
 
 void ASlashCharacter::SetEquippedWeapon(TObjectPtr<AWeapon> Weapon)
 {
+	if (!CombatComponent) return;
 	CombatComponent->EquippedWeapon = Weapon;
 }
 
 TObjectPtr<AGunWeapon> ASlashCharacter::GetEquippedGunWeapon()
 {
+	if (!CombatComponent) return nullptr;
 	return CombatComponent->EquippedGunWeapon;
 }
 
 void ASlashCharacter::SetEquippedGunWeapon(TObjectPtr<AGunWeapon> Weapon)
 {
+	if (!CombatComponent) return;
 	CombatComponent->EquippedGunWeapon = Weapon;
 }
 

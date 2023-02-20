@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "InputAction.h"
 #include "CharacterTypes.h"
+#include "Slash/Public/Types/TurningInPlace.h"
 
 #include "SlashCharacter.generated.h"
 
@@ -85,9 +86,12 @@ private:
 
 	float ZoomFactor ;
 	float AO_Yaw;
+	float InterpAO_Yaw;
 	float AO_Pitch;
 	FRotator StartingAimRotation;
 
+	ETurningInPlace TurningInPlace;
+	void TurnInPlace(float DeltaTime);
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
 	/**
@@ -150,6 +154,7 @@ public:
 	bool IsAiming();
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 
 
 };

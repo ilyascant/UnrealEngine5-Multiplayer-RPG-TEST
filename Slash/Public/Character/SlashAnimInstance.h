@@ -5,6 +5,7 @@
 #include "InputAction.h"
 #include "CharacterTypes.h"
 #include "../Items/Weapons/WeaponTypes.h"
+#include "Slash/Public/Types/TurningInPlace.h"
 
 #include "SlashAnimInstance.generated.h"
 
@@ -42,6 +43,8 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 		
 		UPROPERTY(BlueprintReadOnly, Category = "Equipment")
 		bool bGunEquipped;
+
+		class AGunWeapon* EquippedGunWeapon;
 		
 		UPROPERTY(BlueprintReadOnly, Category = "Equipment")
 		bool bIsAiming;		
@@ -66,5 +69,11 @@ class SLASH_API USlashAnimInstance : public UAnimInstance
 
 		UPROPERTY(BlueprintReadOnly, Category = "Movement")
 		float AO_Pitch;
+
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		FTransform LeftHandTransform;
+
+		UPROPERTY(BlueprintReadOnly, Category = "Movement")
+		ETurningInPlace TurningInPlace;
 
 };

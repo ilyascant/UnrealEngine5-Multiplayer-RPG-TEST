@@ -3,6 +3,9 @@
 AGunWeapon::AGunWeapon() {
 	ItemName = FName(TEXT("Gun"));
 	ItemType = EItemType::EIT_Gun;
+
+	GunWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunWeaponMesh"));
+	SetRootComponent(GunWeaponMesh);
 }
 
 void AGunWeapon::BeginPlay() 

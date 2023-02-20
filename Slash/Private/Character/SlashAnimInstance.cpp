@@ -30,7 +30,9 @@ void USlashAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		bIsAccelerating = SlashCharacterMovement->GetCurrentAcceleration().Size() > 0.f ? true : false;
 		bWeaponEquipped = false;
 		bGunEquipped = false;
+		EquippedGunWeapon = SlashCharacter->GetEquippedGunWeapon();
 		bIsAiming = SlashCharacter->IsAiming();
+		TurningInPlace = SlashCharacter->GetTurningInPlace();
 
 		if (TObjectPtr<AWeapon> EquippedWeapon = SlashCharacter->GetEquippedWeapon()) {
 			ActionState = EquippedWeapon->GetWeaponActionState();
@@ -56,6 +58,16 @@ void USlashAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 		AO_Yaw = SlashCharacter->GetAO_Yaw();
 		AO_Pitch = SlashCharacter->GetAO_Pitch();
+
+		if (bGunEquipped && EquippedGunWeapon && EquippedGunWeapon->GetGunWeaponMesh() && SlashCharacter->GetMesh())
+		{
+			LeftHandTransform = EquippedGunWeapon->GetGunWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
+			FVector OutPosition;
+			FRotator OutRotation;
+			SlashCharacter->GetMesh()->TransformToBoneSpace(FName("Hand_R"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+			LeftHandTransform.SetLocation(OutPosition);
+			LeftHandTransform.SetRotation(FQuat(OutRotation));
+		}
 	}
 	
 }
