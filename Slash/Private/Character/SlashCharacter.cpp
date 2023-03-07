@@ -15,6 +15,7 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Character/SlashAnimInstance.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -75,6 +76,7 @@ void ASlashCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION(ASlashCharacter, OverlappingItem, COND_OwnerOnly);
 
 }
+
 
 void ASlashCharacter::BeginPlay()
 {
@@ -198,7 +200,14 @@ void ASlashCharacter::AimPressed(const FInputActionValue& Value)
 }
 
 void ASlashCharacter::Attack(const FInputActionValue& Value) {
-	if (Controller && CombatComponent->EquippedWeapon) AttackWeapon();
+	float AttackValue = Value.Get<float>();
+	if (Controller) {
+		if (CombatComponent) {
+			if (CombatComponent->EquippedWeapon) AttackWeapon();
+			else if (CombatComponent->EquippedGunWeapon) AttackGunWeapon(AttackValue);
+		}
+		
+	}
 }
 
 void ASlashCharacter::AttackWeapon() 
@@ -209,6 +218,34 @@ void ASlashCharacter::AttackWeapon()
 	else {
 		ServerAttackButtonPressed();
 	}
+}
+
+void ASlashCharacter::AttackGunWeapon(float Value)
+{
+	if (HasAuthority()) {
+		CombatComponent->AttackGunWeapon(Value);
+	}
+	else {
+		ServerGunFireButtonPressed(Value);
+	}
+}
+
+
+void ASlashCharacter::PlayFireMontage(bool bIsAiming)
+{
+	if (CombatComponent == nullptr || CombatComponent->EquippedGunWeapon == nullptr) return;
+
+	TObjectPtr<UAnimInstance> AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && FireWeaponMontage)
+	{
+		bool isPlaying = AnimInstance->Montage_IsPlaying(FireWeaponMontage);
+		if (isPlaying) return;
+		FName SectionName;
+		bIsAiming == true ? SectionName = FName("RifleAim") : SectionName = FName("RifleHip");
+		AnimInstance->Montage_Play(FireWeaponMontage);
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+
 }
 
 void ASlashCharacter::AimOffset(float Delta)
@@ -264,6 +301,13 @@ void ASlashCharacter::TurnInPlace(float DeltaTime)
 	{
 		InterpAO_Yaw = FMath::FInterpTo(InterpAO_Yaw, 0.f, DeltaTime, 4.f);
 		AO_Yaw = InterpAO_Yaw;
+		SCREEN_CUSTOM_MSG(
+			1,
+			3.f,
+			FColor::Red,
+			"AO_Yaw %f",
+			AO_Yaw
+		);
 		if (FMath::Abs(AO_Yaw) < 15.f)
 		{
 			TurningInPlace = ETurningInPlace::ETIP_NOT_TURNING;
@@ -357,10 +401,21 @@ void ASlashCharacter::ServerDropButtonPressed_Implementation()
 	if (CombatComponent)
 		CombatComponent->DropWeapon();
 }
+
 void ASlashCharacter::ServerAttackButtonPressed_Implementation()
 {
-	if (CombatComponent)
-		CombatComponent->AttackWeapon();
+	if (CombatComponent) {
+		if (CombatComponent->EquippedWeapon)  AttackWeapon();
+	}
+
+}
+
+void ASlashCharacter::ServerGunFireButtonPressed_Implementation(float AttackValue)
+{
+	if (CombatComponent) {
+		if (CombatComponent->EquippedGunWeapon) AttackGunWeapon(AttackValue);
+	}
+
 }
 
 bool ASlashCharacter::IsAiming() {

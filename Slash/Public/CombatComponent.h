@@ -21,6 +21,7 @@ class SLASH_API UCombatComponent : public UActorComponent
 		virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		friend class ASlashCharacter;
 
+
 	protected:
 		virtual void BeginPlay() override;
 		void EquipWeapon(AItem* EquipItem);
@@ -39,6 +40,7 @@ class SLASH_API UCombatComponent : public UActorComponent
 		void OnRep_EquippedWeapon();
 
 	private:
+		// Post Initialized in SlashCharacter.cpp
 		ASlashCharacter* Character;
 
 		UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon, VisibleAnywhere, Category = "Weapon")
@@ -49,6 +51,7 @@ class SLASH_API UCombatComponent : public UActorComponent
 		bool CanDisarm();
 		bool CanArm();
 		void AttackWeapon();
+		void AttackGunWeapon(float AttackValue);
 		void AttackEnd();
 
 		UFUNCTION(BlueprintCallable)

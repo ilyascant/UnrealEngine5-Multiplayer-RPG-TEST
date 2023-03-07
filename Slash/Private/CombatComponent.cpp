@@ -239,6 +239,21 @@ void UCombatComponent::AttackWeapon()
 		EquippedWeapon->Attack();
 }
 
+void UCombatComponent::AttackGunWeapon(float AttackValue)
+{
+	if (EquippedGunWeapon && AttackValue > 0)
+	{
+		if(Character){
+			Character->SetIsFiring(true);
+			Character->PlayFireMontage(bAiming);
+			//EquippedGunWeapon->Attack();
+		}
+	}
+	else {
+		if (Character) Character->SetIsFiring(false);
+	}
+}
+
 void UCombatComponent::AttackEnd()
 {
 

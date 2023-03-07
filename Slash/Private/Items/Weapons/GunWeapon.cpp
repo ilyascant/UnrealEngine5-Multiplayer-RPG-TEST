@@ -52,3 +52,7 @@ bool AGunWeapon::DetachFromComponent(TObjectPtr<USceneComponent>& InParent, cons
 {
 	return AItem::DetachFromComponent(InParent, InSocketName);
 }
+
+void AGunWeapon::Attack()
+{
+}

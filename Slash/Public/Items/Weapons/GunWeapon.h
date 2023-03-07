@@ -19,6 +19,9 @@ class SLASH_API AGunWeapon : public AItem
 		virtual bool AttachMeshToSocket(TObjectPtr<USceneComponent> InParent, const FName& InSocketName);
 		virtual bool DetachFromComponent(TObjectPtr<USceneComponent>& InParent, const FName& InSocketName);
 
+		void Attack();
+		void AttackReleased();
+
 		FORCEINLINE USkeletalMeshComponent* GetGunWeaponMesh() const { return GunWeaponMesh; }
 
 	protected:

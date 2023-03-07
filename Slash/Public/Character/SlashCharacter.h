@@ -32,6 +32,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void PlayFireMontage(bool bIsAiming);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -64,7 +66,10 @@ protected:
 	void EquipWeapon(AItem* EquipItem);
 	void DropWeapon();
 	void AttackWeapon();
+	void AttackGunWeapon(float Value);
 	void AimOffset(float Delta);
+
+	bool bIsFiring;
 
 
 	/**
@@ -117,6 +122,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Montages")
 	TObjectPtr<UAnimMontage> EquipMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Montages")
+	TObjectPtr<UAnimMontage> FireWeaponMontage;
 
 	/**
 		Widget
@@ -141,17 +148,22 @@ private:
 	void ServerDropButtonPressed();	
 	UFUNCTION(Server, Reliable)
 	void ServerAttackButtonPressed();
+	UFUNCTION(Server, Reliable)
+	void ServerGunFireButtonPressed(float Value);
 
 
 public:
 	virtual void SetOverlappingItem(AItem* Item);
-	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
-	FORCEINLINE void SetCharacterState(ECharacterState State) { CharacterState = State; }
 	TObjectPtr<AWeapon> GetEquippedWeapon();
 	void SetEquippedWeapon(TObjectPtr<AWeapon> Weapon);	
 	TObjectPtr<AGunWeapon> GetEquippedGunWeapon();
 	void SetEquippedGunWeapon(TObjectPtr<AGunWeapon> Weapon);
 	bool IsAiming();
+
+	FORCEINLINE bool GetIsFiring() const { return bIsFiring; };
+	FORCEINLINE void SetIsFiring(bool FireValue) { bIsFiring = FireValue; };
+	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+	FORCEINLINE void SetCharacterState(ECharacterState State) { CharacterState = State; }
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
